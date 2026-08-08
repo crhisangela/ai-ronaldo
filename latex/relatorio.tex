@@ -1,0 +1,294 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{xcolor}
+
+\newcommand{\preencher}[1]{\textcolor{red}{\bfseries [A PREENCHER: #1]}}
+
+\sloppy
+
+\title{Predição de $\lambda_{max}$ de Moléculas Orgânicas via Aprendizado Profundo: Comparação de Arquiteturas e Aplicação em Triagem Computacional}
+
+\author{Crhisângela Ferreira\inst{1}}
+
+\address{Programa de Pós-Graduação em Ciência da Computação -- Universidade Federal do ABC (UFABC)\\
+  CCM-109 -- Tópicos Especiais em Inteligência Artificial\\
+  \email{\preencher{e-mail institucional ou de contato}}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{resumo}
+  A predição do comprimento de onda de máxima absorção ($\lambda_{max}$) de moléculas
+  orgânicas é relevante para o desenvolvimento de corantes, sensores e fotocatalisadores,
+  mas métodos quânticos de referência (DFT) têm custo computacional elevado para triagens
+  em larga escala. Este trabalho treina e compara quatro abordagens -- MLP com fingerprints
+  Morgan, Gradient Boosting sobre descritores RDKit, LSTM bidirecional sobre SMILES e,
+  opcionalmente, uma rede de mensagens direcionadas (D-MPNN) -- para prever $\lambda_{max}$
+  a partir do SMILES do cromóforo e do solvente, usando o dataset público Deep4Chem. O
+  melhor modelo é então aplicado, com quantificação de incerteza via MC-Dropout, a um
+  conjunto proprietário de 5.974 moléculas geradas computacionalmente, para priorizar
+  candidatos à síntese experimental. \preencher{completar o resumo com o resultado
+  quantitativo principal (ex.: MAE do melhor modelo) assim que os experimentos finais
+  estiverem concluídos}.
+\end{resumo}
+
+\begin{abstract}
+  \preencher{traduzir o resumo para o inglês (abstract) após finalizar o "resumo" em
+  português}
+\end{abstract}
+
+
+\section{Descrição do Problema}
+\label{sec:problema}
+
+A predição de propriedades ópticas de moléculas orgânicas é um desafio central em
+quimioinformática e no desenvolvimento de novos materiais. Em particular, o comprimento
+de onda de máxima absorção ($\lambda_{max}$) no espectro UV-Vis determina aplicações em
+corantes, sensores e fotocatalisadores. Métodos quânticos como a Teoria do Funcional da
+Densidade (DFT) permitem calcular $\lambda_{max}$ com boa precisão, mas seu custo
+computacional elevado inviabiliza a triagem em larga escala sobre espaços moleculares
+amplos.
+
+Este trabalho formula o problema como uma tarefa de regressão supervisionada: dado o
+SMILES de um cromóforo e o SMILES do solvente em que ele é medido, prever o valor de
+$\lambda_{max}$ (em nanômetros). A escolha de incluir o solvente como entrada decorre do
+fato de que $\lambda_{max}$ é sensível ao ambiente químico (efeitos solvatocrômicos), e
+não apenas à estrutura do cromóforo isolado.
+
+O projeto é dividido em duas etapas. Na \textbf{Etapa 1}, modelos são treinados e
+comparados sobre um dataset público rotulado, com o objetivo de identificar a abordagem
+com melhor generalização. Na \textbf{Etapa 2}, o modelo selecionado é aplicado como
+ferramenta de triagem exploratória sobre um conjunto proprietário de 5.974 moléculas sem
+rótulo, geradas computacionalmente por um aluno de iniciação científica do laboratório
+ABC Sim da UFABC, produzindo um ranking de candidatos prioritários para síntese
+experimental.
+
+\subsection{Motivação}
+
+A motivação prática do projeto é substituir, para fins de triagem inicial, cálculos DFT
+custosos por um modelo de aprendizado de máquina treinado sobre dados experimentais, capaz
+de gerar predições em escala para milhares de moléculas em segundos. Isso é particularmente
+relevante para o laboratório ABC Sim, que já dispõe de um espaço de moléculas geradas
+computacionalmente e precisa de um critério eficiente para priorizar quais estruturas
+sintetizar e caracterizar experimentalmente.
+
+\subsection{Definição Formal da Tarefa}
+
+Seja $s_c$ o SMILES do cromóforo e $s_v$ o SMILES do solvente. O objetivo é aprender uma
+função $f(s_c, s_v) \rightarrow \hat{y}$, em que $\hat{y}$ é a predição de $\lambda_{max}$
+em nanômetros, minimizando o Erro Médio Absoluto (MAE) entre $\hat{y}$ e o valor
+experimental $y$ em um conjunto de teste mantido separado do treino.
+
+
+\section{Abordagem}
+\label{sec:abordagem}
+
+\subsection{Conjunto de Dados}
+
+O treinamento e a avaliação dos modelos foram realizados sobre o \textbf{Deep4Chem}
+\cite{joung2020}, base de dados pública disponível via Figshare (DOI:
+10.6084/m9.figshare.12045567.v2). O Deep4Chem compila propriedades ópticas experimentais
+de 7.016 cromóforos orgânicos únicos medidos em 365 solventes distintos, totalizando
+20.236 registros extraídos de 1.358 artigos científicos. Cada entrada contém o SMILES do
+cromóforo, o SMILES do solvente, $\lambda_{abs}$, $\lambda_{em}$, coeficiente de extinção
+molar e rendimento quântico; para este trabalho, apenas o SMILES do cromóforo, o SMILES do
+solvente e $\lambda_{abs}$ (renomeado \texttt{lambda\_max}) foram utilizados.
+
+Na Etapa 2, o modelo treinado é aplicado sobre um conjunto proprietário de 5.974 moléculas,
+representadas por SMILES canônicos e por colunas de identificação que rastreiam os
+anéis/fragmentos de origem de cada molécula. Esse conjunto não possui rótulos de
+$\lambda_{max}$ e é usado exclusivamente para triagem exploratória, nunca para treino ou
+avaliação.
+
+\subsection{Pré-processamento}
+
+Os SMILES foram validados com o RDKit \cite{rdkit} (parsing bem-sucedido via
+\texttt{Chem.MolFromSmiles}), descartando-se registros inválidos ou incompletos. Como
+$\lambda_{max}$ depende do solvente, o SMILES do solvente foi mantido como feature em
+todos os modelos, e não descartado no pré-processamento.
+
+\textbf{Divisão dos dados (scaffold split).} Em vez de uma divisão aleatória entre treino
+e teste, foi adotado um \emph{scaffold split} por molécula, baseado no arcabouço de
+Bemis-Murcko \cite{bemis1996}: todas as ocorrências de uma mesma família estrutural
+(scaffold) são mantidas inteiramente no treino ou inteiramente no teste. Essa escolha
+evita que o mesmo esqueleto molecular apareça em treino e teste, o que superestimaria a
+capacidade de generalização do modelo caso fosse usada uma divisão aleatória --
+recomendação incorporada a partir do feedback recebido sobre a proposta inicial do
+projeto.
+
+\subsection{Modelos}
+
+Foram implementadas e comparadas quatro abordagens, todas em PyTorch/scikit-learn,
+treinadas no Google Colab (GPU gratuita):
+
+\begin{itemize}
+  \item \textbf{Baseline 1 -- MLP com fingerprints Morgan.} Os SMILES do cromóforo e do
+  solvente são convertidos em vetores binários via fingerprints de Morgan
+  \cite{rogers2010} (2.048 bits, raio 2, calculados com RDKit) e concatenados como entrada
+  de uma rede totalmente conectada (MLP) com camadas ocultas de 512 e 256 unidades,
+  ativação ReLU e \emph{dropout}.
+
+  \item \textbf{Baseline 2 (forte) -- Gradient Boosting sobre descritores RDKit.} Um
+  \texttt{GradientBoostingRegressor} \cite{friedman2001} (500 estimadores, profundidade
+  máxima 4, taxa de aprendizado 0,05) é treinado sobre descritores físico-químicos
+  calculados diretamente pelo RDKit (peso molecular, LogP, número de anéis aromáticos,
+  entre outros), incorporado como comparação adicional sugerida no feedback da proposta.
+
+  \item \textbf{Modelo principal -- LSTM bidirecional \emph{char-level}.} Cada caractere
+  do SMILES do cromóforo é mapeado a um \emph{embedding} treinável e processado por uma
+  LSTM bidirecional \cite{schuster1997}; sua representação final é concatenada ao
+  fingerprint Morgan do solvente (256 bits) antes de passar por camadas densas que
+  produzem a predição final.
+
+  \item \textbf{Extensão opcional -- D-MPNN (Chemprop).} Uma rede de mensagens direcionadas
+  sobre o grafo molecular \cite{yang2019}, incluída como comparação de estado da arte,
+  condicionada à disponibilidade de tempo para treino (célula opcional no notebook,
+  requer a biblioteca \texttt{chemprop}).
+\end{itemize}
+
+\subsection{Protocolo Experimental}
+
+Todos os modelos foram avaliados com o mesmo scaffold split (80\% treino / 20\% teste), e
+a métrica principal reportada é o Erro Médio Absoluto (MAE, em nm), complementada pela
+Raiz do Erro Quadrático Médio (RMSE, em nm) -- ambas incorporadas a partir da recomendação
+de reportar as duas métricas em vez de apenas o MAE. Hiperparâmetros foram selecionados
+por validação cruzada sobre o conjunto de treino.
+
+\subsection{Etapa 2 -- Aplicação e Quantificação de Incerteza}
+
+O modelo com melhor desempenho na Etapa 1 é aplicado ao conjunto proprietário de 5.974
+moléculas para gerar um ranking de $\lambda_{max}$ previsto. Como o conjunto proprietário
+não possui um solvente rotulado, foi adotado um solvente de referência constante para
+todas as predições -- decisão que deve ser ajustada conforme o contexto experimental real
+do laboratório ABC Sim (por exemplo, o solvente mais frequente no Deep4Chem, ou o de
+interesse direto do laboratório).
+
+Como esse ranking guiará decisões de síntese experimental, foi incorporada quantificação
+de incerteza via \emph{MC-Dropout} \cite{gal2016}: o modelo é mantido em modo de
+treinamento (\emph{dropout} ativo) durante a inferência, e múltiplas passadas
+($n=30$) sobre a mesma molécula produzem uma distribuição de predições, cujo desvio-padrão
+é usado como proxy de incerteza. Candidatos de alta confiança (baixa variância entre
+passadas) são priorizados no ranking final. Também está prevista uma análise de
+deslocamento de distribuição (\emph{domain shift}) entre o Deep4Chem e o conjunto
+proprietário, comparando estatísticas de descritores moleculares (peso molecular, LogP
+etc.) entre os dois conjuntos, para avaliar até que ponto a transferência do modelo é
+confiável.
+
+
+\section{Resultados}
+\label{sec:resultados}
+
+\preencher{Esta seção está estruturada como template. Os experimentos completos (GBM,
+Bi-LSTM, comparação final e aplicação na Etapa 2) ainda não haviam sido executados até a
+elaboração deste relatório -- preencher as tabelas e figuras abaixo após rodar o notebook
+por completo no Google Colab, com os datasets reais.}
+
+\subsection{Resultado preliminar disponível}
+
+Até o momento, apenas o treinamento do Baseline 1 (MLP com fingerprints Morgan) foi
+executado, com a seguinte evolução do MAE de validação ao longo dos epochs:
+
+\begin{table}[ht]
+\centering
+\caption{MAE de validação do MLP (fingerprints Morgan) por epoch -- resultado
+preliminar, execução parcial.}
+\label{tab:mlp-preliminar}
+\begin{tabular}{cc}
+\toprule
+Epoch & MAE de validação (nm) \\
+\midrule
+20  & 36,90 \\
+40  & 35,04 \\
+60  & 33,91 \\
+80  & 33,80 \\
+100 & \preencher{valor do epoch 100} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O valor de MAE de validação estabiliza em torno de 33,8--34 nm entre os epochs 80 e 100,
+sugerindo convergência do baseline nessa faixa. \preencher{comentar se esse patamar é
+consistente com a literatura sobre o Deep4Chem, e se há sinais de overfitting}.
+
+\subsection{Comparação entre modelos (Etapa 1)}
+
+\preencher{preencher com os valores de MAE e RMSE de teste, no scaffold split, para cada
+modelo}
+
+\begin{table}[ht]
+\centering
+\caption{Comparação de desempenho dos modelos na Etapa 1 (conjunto de teste, scaffold
+split).}
+\label{tab:comparacao}
+\begin{tabular}{lcc}
+\toprule
+Modelo & MAE (nm) & RMSE (nm) \\
+\midrule
+MLP + fingerprints Morgan          & \preencher{valor} & \preencher{valor} \\
+Gradient Boosting (descritores RDKit) & \preencher{valor} & \preencher{valor} \\
+Bi-LSTM (SMILES + solvente)        & \preencher{valor} & \preencher{valor} \\
+D-MPNN (Chemprop, opcional)        & \preencher{valor} & \preencher{valor} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\preencher{Incluir aqui um gráfico (dispersão predito vs. real, ou barras de MAE por
+modelo) gerado a partir das saídas reais do notebook -- por exemplo, com
+\texttt{matplotlib}, exportado como PNG/PDF e incluído via \texttt{\textbackslash
+includegraphics}.}
+
+\subsection{Etapa 2 -- Ranking e incerteza}
+
+\preencher{preencher com: (i) estatísticas descritivas do ranking de $\lambda_{max}$
+previsto para as 5.974 moléculas; (ii) exemplos dos candidatos de maior confiança
+(menor desvio-padrão via MC-Dropout); (iii) resultado da análise de deslocamento de
+distribuição entre Deep4Chem e o conjunto proprietário.}
+
+
+\section{Lições Aprendidas}
+\label{sec:licoes}
+
+\preencher{Esta seção deve ser escrita após a execução completa dos experimentos.
+Sugestões de pontos a cobrir, com base no protocolo adotado:}
+
+\begin{itemize}
+  \item \preencher{O que funcionou: por exemplo, se o scaffold split revelou uma queda de
+  desempenho em relação a um split aleatório testado como controle, evidenciando
+  overfitting a famílias estruturais específicas.}
+  \item \preencher{O que não funcionou ou exigiu ajuste: por exemplo, dificuldades no
+  parsing de SMILES do Deep4Chem, necessidade de ajustar \texttt{RAW\_PATH}/\texttt{COL\_MAP}
+  conforme o cabeçalho real do arquivo baixado do Figshare, ou instabilidade no treino do
+  Bi-LSTM.}
+  \item \preencher{Decisões de design que valeriam revisão: por exemplo, a escolha de um
+  solvente de referência constante para a Etapa 2, dado que o conjunto proprietário não
+  tem solvente rotulado -- isso é uma limitação a ser discutida.}
+  \item \preencher{O que seria feito diferente: por exemplo, priorizar o D-MPNN desde o
+  início em vez de deixá-lo como extensão opcional, ou aplicar validação cruzada por
+  scaffold (k-fold sobre scaffolds) em vez de um único split, conforme sugerido no
+  feedback recebido.}
+\end{itemize}
+
+
+\section{Reprodutibilidade}
+\label{sec:reprodutibilidade}
+
+O código completo do projeto (pré-processamento, treinamento dos quatro modelos,
+avaliação e aplicação na Etapa 2) está disponível em:
+\preencher{inserir aqui o link do repositório (GitHub/GitLab)}.
+
+O repositório inclui o notebook utilizado para todos os experimentos, com instruções para
+baixar o Deep4Chem via Figshare e para ajustar os caminhos dos arquivos de entrada.
+
+
+\bibliographystyle{sbc}
+\bibliography{referencias}
+
+\end{document}
