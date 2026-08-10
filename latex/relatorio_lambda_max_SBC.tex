@@ -18,7 +18,7 @@
 \address{Programa de Pós-Graduação em Ciência da Computação\\
   Universidade Federal do ABC (UFABC)\\
   CCM-109 -- Tópicos Especiais em Inteligência Artificial
-  \email{ferreiracrhis@gmail.com}
+  \email{crhisangela.ferreira@ufabc.edu.br}
 }
 
 \begin{document}
@@ -26,7 +26,7 @@
 \maketitle
 
 \begin{resumo}
-A predição do comprimento de onda de máxima absorção ($\lambda_{max}$) de moléculas orgânicas é relevante para o desenvolvimento de corantes, sensores e fotocatalisadores, mas métodos quânticos de referência (DFT) têm custo computacional elevado para triagens em larga escala. Este trabalho treina e compara três abordagens obrigatórias -- MLP com fingerprints Morgan, Gradient Boosting sobre descritores RDKit e Bi-LSTM bidirecional sobre SMILES --, além de uma extensão opcional de estado da arte (D-MPNN/Chemprop), para prever $\lambda_{max}$ a partir do SMILES do cromóforo e do solvente, usando o dataset público Deep4Chem. O melhor modelo é então aplicado, com quantificação de incerteza (MC-Dropout ou ensemble bootstrap, conforme o modelo), a um conjunto proprietário de 5.974 moléculas geradas computacionalmente, para priorizar candidatos à síntese experimental. Em uma execução preliminar de validação do pipeline (subamostra reduzida do Deep4Chem), o Gradient Boosting obteve o melhor desempenho (MAE de 44,5 nm no teste), e a análise de deslocamento de distribuição revelou diferenças estatisticamente significativas entre o Deep4Chem e o conjunto proprietário, sinalizando cautela na transferência do modelo.
+A predição do comprimento de onda de máxima absorção ($\lambda_{max}$) de moléculas orgânicas é relevante para o desenvolvimento de corantes, sensores e fotocatalisadores, mas métodos quânticos de referência (DFT) têm custo computacional elevado para triagens em larga escala. Este trabalho treina e compara três abordagens obrigatórias (-- )MLP com fingerprints Morgan, Gradient Boosting sobre descritores RDKit e Bi-LSTM bidirecional sobre SMILES), além de uma extensão opcional de estado da arte (D-MPNN/Chemprop), para prever $\lambda_{max}$ a partir do SMILES do cromóforo e do solvente, usando o dataset público Deep4Chem. O melhor modelo é então aplicado, com quantificação de incerteza (MC-Dropout ou ensemble bootstrap, conforme o modelo), a um conjunto proprietário de 5.974 moléculas geradas computacionalmente, para priorizar candidatos à síntese experimental. Em uma execução preliminar de validação do pipeline (subamostra reduzida do Deep4Chem), o Gradient Boosting obteve o melhor desempenho (MAE de 44,5 nm no teste), e a análise de deslocamento de distribuição revelou diferenças estatisticamente significativas entre o Deep4Chem e o conjunto proprietário, sinalizando cautela na transferência do modelo.
 \end{resumo}
 
 \begin{abstract}
@@ -35,9 +35,9 @@ Predicting the wavelength of maximum absorption ($\lambda_{max}$) of organic mol
 
 \section{Descrição do Problema}
 
-A predição de propriedades ópticas de moléculas orgânicas é um desafio central em quimioinformática e no desenvolvimento de novos materiais. Em particular, o comprimento de onda de máxima absorção ($\lambda_{max}$) no espectro UV-Vis determina aplicações em corantes, sensores e fotocatalisadores. Métodos quânticos como a Teoria do Funcional da Densidade (DFT) permitem calcular $\lambda_{max}$ com boa precisão, mas seu custo computacional elevado inviabiliza a triagem em larga escala sobre espaços moleculares amplos.
+A predição de propriedades ópticas de moléculas orgânicas é um desafio central em quimioinformática e no desenvolvimento de novos materiais. Em particular, o comprimento de onda de máxima absorção ($\lambda_{max}$) no espectro UV-Vis determina aplicações em corantes, sensores e fotocatalisadores. Métodos quânticos baseados na Teoria do Funcional da Densidade (DFT) \cite{hohenberg1964,kohnsham1965}, em sua formulação dependente do tempo (TD-DFT) \cite{adamo2013}, permitem calcular estados excitados e $\lambda_{max}$ com boa precisão, mas seu custo computacional elevado inviabiliza a triagem em larga escala sobre espaços moleculares amplos.
 
-Este trabalho formula o problema como uma tarefa de regressão supervisionada: dado o SMILES de um cromóforo e o SMILES do solvente em que ele é medido, prever o valor de $\lambda_{max}$ (em nanômetros). A escolha de incluir o solvente como entrada decorre do fato de que $\lambda_{max}$ é sensível ao ambiente químico (efeitos solvatocrômicos), e não apenas à estrutura do cromóforo isolado.
+Este trabalho formula o problema como uma tarefa de regressão supervisionada: dado o SMILES de um cromóforo e o SMILES do solvente em que ele é medido, prever o valor de $\lambda_{max}$ (em nanômetros). A escolha de incluir o solvente como entrada decorre do fato de que $\lambda_{max}$ é sensível ao ambiente químico (efeitos solvatocrômicos) \cite{reichardt1994}, e não apenas à estrutura do cromóforo isolado.
 
 O projeto é dividido em duas etapas. Na Etapa 1, modelos são treinados e comparados sobre um dataset público rotulado, com o objetivo de identificar a abordagem com melhor generalização. Na Etapa 2, o modelo selecionado é aplicado como ferramenta de triagem exploratória sobre um conjunto proprietário de 5.974 moléculas sem rótulo, geradas computacionalmente por um aluno de iniciação científica do laboratório ABC Sim da UFABC, produzindo um ranking de candidatos prioritários para síntese experimental.
 
@@ -67,13 +67,13 @@ Os SMILES do Deep4Chem são validados com o RDKit \cite{rdkit2024} (\texttt{Chem
 
 \subsection{Modelos}
 
-São implementadas e comparadas três abordagens obrigatórias, todas em PyTorch/scikit-learn:
+São implementadas e comparadas três abordagens obrigatórias, todas em PyTorch \cite{paszke2019}/scikit-learn \cite{pedregosa2011}:
 
 \begin{itemize}
-  \item \textbf{Baseline 1 -- MLP com fingerprints Morgan.} Os SMILES do cromóforo e do solvente são convertidos em vetores binários via fingerprints de Morgan \cite{rogers2010} (2.048 bits para o cromóforo, 256 bits para o solvente, raio 2, calculados com RDKit) e concatenados como entrada de uma rede totalmente conectada (MLP) com camadas ocultas de até 512 e 256 unidades, ativação ReLU e \textit{dropout}.
-  \item \textbf{Baseline 2 (forte) -- Gradient Boosting sobre descritores RDKit.} Um \texttt{GradientBoostingRegressor} \cite{friedman2001} é treinado sobre $\approx$217 descritores físico-químicos calculados pelo RDKit (peso molecular, LogP, número de anéis aromáticos, TPSA, cargas parciais, entre outros), computados tanto para o cromóforo quanto para o solvente -- incorporado como comparação adicional sugerida no feedback da proposta.
-  \item \textbf{Modelo principal -- Bi-LSTM \textit{char-level}.} Cada caractere do SMILES do cromóforo é mapeado a um \textit{embedding} treinável e processado por uma LSTM bidirecional \cite{schuster1997}; a concatenação dos últimos estados forward/backward é combinada ao fingerprint Morgan do solvente (256 bits) antes de passar por camadas densas que produzem a predição final.
-  \item \textbf{Extensão opcional -- D-MPNN (Chemprop).} Uma rede de mensagens direcionadas sobre o grafo molecular \cite{yang2019}, incluída como comparação de estado da arte em uma célula separada e autocontida do notebook (\texttt{RUN\_CHEMPROP=True}), condicionada à disponibilidade da biblioteca \texttt{chemprop} e de tempo de treino antes da entrega.
+  \item \textbf{Baseline 1 -- MLP com fingerprints Morgan.} Os SMILES do cromóforo e do solvente são convertidos em vetores binários via fingerprints de Morgan \cite{rogers2010} (2.048 bits para o cromóforo, 256 bits para o solvente, raio 2, calculados com RDKit) e concatenados como entrada de uma rede totalmente conectada (MLP) com camadas ocultas de até 512 e 256 unidades, ativação ReLU e \textit{dropout} \cite{srivastava2014}.
+  \item \textbf{Baseline 2 (forte) -- Gradient Boosting sobre descritores RDKit.} Um \texttt{GradientBoostingRegressor} \cite{friedman2001} é treinado sobre $\approx$217 descritores físico-químicos calculados pelo RDKit (peso molecular, LogP, número de anéis aromáticos, TPSA, cargas parciais, entre outros) \cite{todeschini2009}, computados tanto para o cromóforo quanto para o solvente -- incorporado como comparação adicional sugerida no feedback da proposta.
+  \item \textbf{Modelo principal -- Bi-LSTM \textit{char-level}.} Cada caractere do SMILES do cromóforo é mapeado a um \textit{embedding} treinável e processado por uma LSTM bidirecional \cite{hochreiter1997,schuster1997}; a concatenação dos últimos estados forward/backward é combinada ao fingerprint Morgan do solvente (256 bits) antes de passar por camadas densas que produzem a predição final.
+  \item \textbf{Extensão opcional -- D-MPNN (Chemprop).} Uma rede de mensagens direcionadas sobre o grafo molecular \cite{gilmer2017,yang2019}, na linha dos benchmarks de aprendizado molecular consolidados pelo MoleculeNet \cite{wu2018}, incluída como comparação de estado da arte em uma célula separada e autocontida do notebook (\texttt{RUN\_CHEMPROP=True}), condicionada à disponibilidade da biblioteca \texttt{chemprop} e de tempo de treino antes da entrega.
 \end{itemize}
 
 \subsection{Protocolo Experimental}
@@ -84,7 +84,7 @@ Todos os modelos obrigatórios são avaliados com o mesmo scaffold split (80\% t
 
 O modelo com melhor desempenho na Etapa 1 é aplicado ao conjunto proprietário de 5.974 moléculas para gerar um ranking de $\lambda_{max}$ previsto. Como esse conjunto não possui um solvente rotulado, é adotado como referência constante o solvente mais frequente no Deep4Chem (diclorometano, \texttt{ClCCl}) -- decisão que deve ser ajustada conforme o contexto experimental real do laboratório ABC Sim.
 
-Como esse ranking guiará decisões de síntese experimental, foi incorporada quantificação de incerteza, escolhida de acordo com o tipo do modelo vencedor: para os modelos neurais (MLP ou Bi-LSTM), usa-se \textbf{MC-Dropout} \cite{gal2016} -- o modelo é mantido em modo de treinamento (\textit{dropout} ativo) durante a inferência, e múltiplas passadas sobre a mesma molécula produzem uma distribuição de predições cujo desvio-padrão é usado como proxy de incerteza; para o Gradient Boosting, que não possui \textit{dropout}, é treinado em seu lugar um pequeno \textbf{ensemble bootstrap} de modelos com os mesmos hiperparâmetros, sementes e subamostras (\texttt{subsample}) distintas, cuja dispersão de predições cumpre o mesmo papel. Em ambos os casos, candidatos de alta confiança (baixa variância entre passadas/modelos) são priorizados no ranking final. Também é realizada uma análise de deslocamento de distribuição (\textit{domain shift}) entre o Deep4Chem e o conjunto proprietário, comparando estatísticas de descritores moleculares-chave (peso molecular, LogP, TPSA, doadores/aceptores de ligação de hidrogênio, anéis aromáticos, ligações rotacionáveis) por meio do teste de Kolmogorov-Smirnov, para avaliar até que ponto a transferência do modelo é confiável.
+Como esse ranking guiará decisões de síntese experimental, foi incorporada quantificação de incerteza, escolhida de acordo com o tipo do modelo vencedor: para os modelos neurais (MLP ou Bi-LSTM), usa-se \textbf{MC-Dropout} \cite{gal2016,srivastava2014} -- o modelo é mantido em modo de treinamento (\textit{dropout} ativo) durante a inferência, e múltiplas passadas sobre a mesma molécula produzem uma distribuição de predições cujo desvio-padrão é usado como proxy de incerteza; para o Gradient Boosting, que não possui \textit{dropout}, é treinado em seu lugar um pequeno \textbf{ensemble bootstrap} de modelos com os mesmos hiperparâmetros, sementes e subamostras (\texttt{subsample}) distintas, na linha de ensembles preditivos para quantificação de incerteza \cite{lakshminarayanan2017}, cuja dispersão de predições cumpre o mesmo papel. Em ambos os casos, candidatos de alta confiança (baixa variância entre passadas/modelos) são priorizados no ranking final. Também é realizada uma análise de deslocamento de distribuição (\textit{domain shift}) entre o Deep4Chem e o conjunto proprietário, comparando estatísticas de descritores moleculares-chave (peso molecular, LogP, TPSA, doadores/aceptores de ligação de hidrogênio, anéis aromáticos, ligações rotacionáveis) por meio do teste de Kolmogorov-Smirnov, para avaliar até que ponto a transferência do modelo é confiável.
 
 \section{Resultados}
 
@@ -198,9 +198,14 @@ O deslocamento de distribuição é acentuado em todos os sete descritores avali
 
 O código completo do projeto (pré-processamento, treinamento dos modelos, avaliação e aplicação na Etapa 2) está disponível em: \url{https://github.com/crhisangela/ai-ronaldo}.
 
-O repositório inclui o notebook \texttt{sandbox/sandbox.ipynb}, usado para todos os experimentos, com um flag \texttt{QUICK\_TEST} que alterna entre uma execução reduzida de validação do pipeline (usada para gerar os resultados preliminares desta seção) e a execução completa sobre o Deep4Chem inteiro. O Deep4Chem é baixado automaticamente do Figshare na primeira execução e mantido em cache local (\texttt{resources/deep4chem\_raw/}); o conjunto proprietário é lido de \texttt{resources/banco\_smiles\_aromatizados.parquet}.
+O repositório inclui o notebook \texttt{main.ipynb}, usado para todos os experimentos, com um flag \texttt{QUICK\_TEST} que alterna entre uma execução reduzida de validação do pipeline (usada para gerar os resultados preliminares desta seção) e a execução completa sobre o Deep4Chem inteiro. O Deep4Chem é baixado automaticamente do Figshare na primeira execução e mantido em cache local (\texttt{resources/deep4chem\_raw/}); o conjunto proprietário é lido de \texttt{resources/banco\_smiles\_aromatizados.parquet}.
 
-\begin{thebibliography}{8}
+\begin{thebibliography}{20}
+
+\bibitem[Adamo and Jacquemin 2013]{adamo2013}
+Adamo, C. and Jacquemin, D. (2013).
+\newblock The calculations of excited-state properties with time-dependent density functional theory.
+\newblock {\em Chemical Society Reviews}, 42(3):845--856.
 
 \bibitem[Bemis and Murcko 1996]{bemis1996}
 Bemis, G.~W. and Murcko, M.~A. (1996).
@@ -217,15 +222,55 @@ Gal, Y. and Ghahramani, Z. (2016).
 \newblock Dropout as a bayesian approximation: Representing model uncertainty in deep learning.
 \newblock In {\em Proceedings of the 33rd International Conference on Machine Learning (ICML)}, pages 1050--1059.
 
+\bibitem[Gilmer et al. 2017]{gilmer2017}
+Gilmer, J., Schoenholz, S.~S., Riley, P.~F., Vinyals, O., and Dahl, G.~E. (2017).
+\newblock Neural message passing for quantum chemistry.
+\newblock In {\em Proceedings of the 34th International Conference on Machine Learning (ICML)}, pages 1263--1272.
+
+\bibitem[Hochreiter and Schmidhuber 1997]{hochreiter1997}
+Hochreiter, S. and Schmidhuber, J. (1997).
+\newblock Long short-term memory.
+\newblock {\em Neural Computation}, 9(8):1735--1780.
+
+\bibitem[Hohenberg and Kohn 1964]{hohenberg1964}
+Hohenberg, P. and Kohn, W. (1964).
+\newblock Inhomogeneous electron gas.
+\newblock {\em Physical Review}, 136(3B):B864--B871.
+
 \bibitem[Joung et al. 2020]{joung2020}
 Joung, J.~F., Han, M., Jeong, J., and Park, S. (2020).
 \newblock Experimental database of optical properties of organic compounds.
 \newblock {\em Scientific Data}, 7:295.
 
+\bibitem[Kohn and Sham 1965]{kohnsham1965}
+Kohn, W. and Sham, L.~J. (1965).
+\newblock Self-consistent equations including exchange and correlation effects.
+\newblock {\em Physical Review}, 140(4A):A1133--A1138.
+
+\bibitem[Lakshminarayanan et al. 2017]{lakshminarayanan2017}
+Lakshminarayanan, B., Pritzel, A., and Blundell, C. (2017).
+\newblock Simple and scalable predictive uncertainty estimation using deep ensembles.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, pages 6402--6413.
+
+\bibitem[Paszke et al. 2019]{paszke2019}
+Paszke, A., Gross, S., Massa, F., et~al. (2019).
+\newblock Pytorch: An imperative style, high-performance deep learning library.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}, pages 8026--8037.
+
+\bibitem[Pedregosa et al. 2011]{pedregosa2011}
+Pedregosa, F., Varoquaux, G., Gramfort, A., et~al. (2011).
+\newblock Scikit-learn: Machine learning in python.
+\newblock {\em Journal of Machine Learning Research}, 12:2825--2830.
+
 \bibitem[RDKit 2024]{rdkit2024}
 RDKit (2024).
 \newblock Rdkit: Open-source cheminformatics.
 \newblock \url{https://www.rdkit.org}.
+
+\bibitem[Reichardt 1994]{reichardt1994}
+Reichardt, C. (1994).
+\newblock Solvatochromic dyes as solvent polarity indicators.
+\newblock {\em Chemical Reviews}, 94(8):2319--2358.
 
 \bibitem[Rogers and Hahn 2010]{rogers2010}
 Rogers, D. and Hahn, M. (2010).
@@ -236,6 +281,21 @@ Rogers, D. and Hahn, M. (2010).
 Schuster, M. and Paliwal, K.~K. (1997).
 \newblock Bidirectional recurrent neural networks.
 \newblock {\em IEEE Transactions on Signal Processing}, 45(11):2673--2681.
+
+\bibitem[Srivastava et al. 2014]{srivastava2014}
+Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., and Salakhutdinov, R. (2014).
+\newblock Dropout: A simple way to prevent neural networks from overfitting.
+\newblock {\em Journal of Machine Learning Research}, 15(1):1929--1958.
+
+\bibitem[Todeschini and Consonni 2009]{todeschini2009}
+Todeschini, R. and Consonni, V. (2009).
+\newblock {\em Molecular Descriptors for Chemoinformatics}.
+\newblock Wiley-VCH, Weinheim.
+
+\bibitem[Wu et al. 2018]{wu2018}
+Wu, Z., Ramsundar, B., Feinberg, E.~N., et~al. (2018).
+\newblock Moleculenet: A benchmark for molecular machine learning.
+\newblock {\em Chemical Science}, 9(2):513--530.
 
 \bibitem[Yang et al. 2019]{yang2019}
 Yang, K., Swanson, K., Jin, W., et~al. (2019).
