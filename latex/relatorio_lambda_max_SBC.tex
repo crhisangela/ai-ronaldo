@@ -57,6 +57,15 @@ O treinamento e a avaliação dos modelos são realizados sobre o Deep4Chem \cit
 
 Na Etapa 2, o modelo treinado é aplicado sobre o conjunto proprietário de 5.974 moléculas (\texttt{resources/banco\_smiles\_aromatizados.parquet}), representadas por SMILES canônicos e por colunas de identificação que rastreiam os anéis/fragmentos de origem de cada molécula. Esse conjunto não possui rótulos de $\lambda_{max}$ e é usado exclusivamente para triagem exploratória, nunca para treino ou avaliação.
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{../resources/figures/eda_lambda_solventes.png}
+\caption{Análise exploratória do Deep4Chem. Esquerda: distribuição do $\lambda_{max}$ experimental. Direita: os 10 solventes mais frequentes no dataset.}
+\label{fig:eda}
+\end{figure}
+
+A Figura \ref{fig:eda} mostra a distribuição do $\lambda_{max}$ experimental no Deep4Chem, concentrada majoritariamente entre 300 e 500 nm, com uma cauda longa até a região de infravermelho próximo, e os 10 solventes mais frequentes, liderados por diclorometano (\texttt{ClCCl}), o que motiva sua escolha como solvente de referência constante na Etapa 2 (Seção 2.5).
+
 \subsection{Pré-processamento}
 
 Os SMILES do Deep4Chem são validados com o RDKit \cite{rdkit2024} (\texttt{Chem.MolFromSmiles}), descartando-se registros com valores ausentes ou SMILES inválidos, e removendo-se duplicatas por par (cromóforo, solvente). Como $\lambda_{max}$ depende do solvente, o SMILES do solvente é mantido como feature em todos os modelos, e não descartado no pré-processamento.
