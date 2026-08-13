@@ -15,11 +15,11 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Conjunto de Dados}{2}{}\protected@file@percent }
 \citation{rdkit2024}
 \citation{bemis1996}
+\citation{paszke2019}
+\citation{pedregosa2011}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Análise exploratória do Deep4Chem. Esquerda: distribuição do $\lambda _{max}$ experimental. Direita: os 10 solventes mais frequentes no dataset.}}{3}{}\protected@file@percent }
 \newlabel{fig:eda}{{1}{3}{Conjunto de Dados}{figure.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Pré-processamento}{3}{}\protected@file@percent }
-\citation{paszke2019}
-\citation{pedregosa2011}
 \citation{rogers2010}
 \citation{srivastava2014}
 \citation{friedman2001}
@@ -29,41 +29,41 @@
 \citation{gilmer2017}
 \citation{yang2019}
 \citation{wu2018}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Modelos}{4}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Protocolo Experimental}{4}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Etapa 2 -- Aplicação e Quantificação de Incerteza}{4}{}\protected@file@percent }
 \citation{gal2016}
 \citation{srivastava2014}
 \citation{lakshminarayanan2017}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Modelos}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Protocolo Experimental}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Etapa 2 -- Aplicação e Quantificação de Incerteza}{4}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Resultados}{5}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Comparação entre modelos (Etapa 1)}{5}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Comparação de desempenho dos modelos na Etapa 1 (conjunto de teste, scaffold split) -- resultado preliminar, subamostra de validação do pipeline.}}{5}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Comparação de desempenho dos modelos na Etapa 1 (conjunto de teste, scaffold split; subamostra de validação do pipeline).}}{5}{}\protected@file@percent }
 \newlabel{tab:comparacao}{{1}{5}{Comparação entre modelos (Etapa 1)}{table.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Esquerda: MAE de teste por modelo. Direita: dispersão $\lambda _{max}$ previsto vs. real para o melhor modelo (Gradient Boosting) -- resultado preliminar (subamostra de validação).}}{6}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Esquerda: MAE de teste por modelo. Direita: dispersão $\lambda _{max}$ previsto vs. real para o melhor modelo (Gradient Boosting).}}{6}{}\protected@file@percent }
 \newlabel{fig:comparacao}{{2}{6}{Comparação entre modelos (Etapa 1)}{figure.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Etapa 2 -- Ranking e incerteza}{6}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Deslocamento de distribuição (\textit  {domain shift})}{6}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Estatísticas descritivas do ranking de $\lambda _{max}$ previsto para as 5.974 moléculas proprietárias -- resultado preliminar.}}{7}{}\protected@file@percent }
-\newlabel{tab:etapa2}{{2}{7}{Etapa 2 -- Ranking e incerteza}{table.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Esquerda: distribuição do $\lambda _{max}$ previsto para o conjunto proprietário. Direita: $\lambda _{max}$ previsto vs. incerteza, com a mediana da incerteza como referência para a triagem de candidatos de alta confiança -- resultado preliminar.}}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Estatísticas descritivas do ranking de $\lambda _{max}$ previsto para as 5.974 moléculas proprietárias.}}{6}{}\protected@file@percent }
+\newlabel{tab:etapa2}{{2}{6}{Etapa 2 -- Ranking e incerteza}{table.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Esquerda: distribuição do $\lambda _{max}$ previsto para o conjunto proprietário. Direita: $\lambda _{max}$ previsto vs. incerteza, com a mediana da incerteza como referência para a triagem de candidatos de alta confiança.}}{7}{}\protected@file@percent }
 \newlabel{fig:etapa2}{{3}{7}{Etapa 2 -- Ranking e incerteza}{figure.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Lições Aprendidas}{7}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Deslocamento de distribuição entre o Deep4Chem (treino) e o conjunto proprietário -- resultado preliminar, ordenado por estatística KS decrescente. Todos os $p$-valores $< 10^{-180}$.}}{8}{}\protected@file@percent }
-\newlabel{tab:domainshift}{{3}{8}{Deslocamento de distribuição (\textit  {domain shift})}{table.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Distribuições sobrepostas de descritores-chave: Deep4Chem (treino) vs. conjunto proprietário -- resultado preliminar.}}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Deslocamento de distribuição (\textit  {domain shift})}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Deslocamento de distribuição entre o Deep4Chem (treino) e o conjunto proprietário, ordenado por estatística KS decrescente. Todos os $p$-valores $< 10^{-180}$.}}{7}{}\protected@file@percent }
+\newlabel{tab:domainshift}{{3}{7}{Deslocamento de distribuição (\textit  {domain shift})}{table.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Distribuições sobrepostas de descritores-chave: Deep4Chem (treino) vs. conjunto proprietário.}}{8}{}\protected@file@percent }
 \newlabel{fig:domainshift}{{4}{8}{Deslocamento de distribuição (\textit  {domain shift})}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Lições Aprendidas}{8}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}Conclusão}{9}{}\protected@file@percent }
 \bibcite{adamo2013}{Adamo and Jacquemin 2013}
 \bibcite{bemis1996}{Bemis and Murcko 1996}
 \bibcite{friedman2001}{Friedman 2001}
 \bibcite{gal2016}{Gal and Ghahramani 2016}
 \bibcite{gilmer2017}{Gilmer et al. 2017}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Reprodutibilidade}{10}{}\protected@file@percent }
 \bibcite{hochreiter1997}{Hochreiter and Schmidhuber 1997}
 \bibcite{hohenberg1964}{Hohenberg and Kohn 1964}
 \bibcite{joung2020}{Joung et al. 2020}
 \bibcite{kohnsham1965}{Kohn and Sham 1965}
 \bibcite{lakshminarayanan2017}{Lakshminarayanan et al. 2017}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Reprodutibilidade}{10}{}\protected@file@percent }
 \bibcite{paszke2019}{Paszke et al. 2019}
 \bibcite{pedregosa2011}{Pedregosa et al. 2011}
 \bibcite{rdkit2024}{RDKit 2024}
